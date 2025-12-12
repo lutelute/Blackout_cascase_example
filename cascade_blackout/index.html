@@ -68,6 +68,21 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
+        .docs-link {
+            display: inline-block;
+            background: #374151;
+            color: #d1d5db;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+        .docs-link:hover {
+            background: #4b5563;
+            color: white;
+        }
         .back-link {
             display: inline-block;
             color: #9ca3af;
@@ -102,8 +117,10 @@
                 React開発環境でJSXファイルを実行してください。
             </div>
 
-            <a href="../" class="file-link">← メインページに戻る</a>
-            <a href="./comprehensive_powerflow_simulation.jsx" class="file-link" download>JSXファイルをダウンロード</a>
+            <a href="../#cascade-demo" class="file-link">🚀 統合版シミュレーション</a>
+            <a href="../README.md#cascade-blackout" class="docs-link">📖 詳細説明</a>
+            <br><br>
+            <a href="./comprehensive_powerflow_simulation.jsx" class="file-link" download>📥 JSXダウンロード</a>
         </div>
 
         <a href="../" class="back-link">← 電力系統シミュレーション集に戻る</a>

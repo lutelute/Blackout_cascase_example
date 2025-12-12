@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>電圧安定度シミュレーション</title>
+    <title>UC Jam安定度シミュレーション</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -24,7 +24,7 @@
             font-size: 2.5rem;
             font-weight: bold;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #10b981, #059669);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -47,13 +47,13 @@
         }
         .card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
         }
         .card-title {
             font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 10px;
-            color: #c084fc;
+            color: #4ade80;
         }
         .card-description {
             color: #d1d5db;
@@ -61,17 +61,19 @@
         }
         .file-link {
             display: inline-block;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
             padding: 10px 20px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 500;
             transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         .file-link:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
         }
         .docs-link {
             display: inline-block;
@@ -82,20 +84,12 @@
             text-decoration: none;
             font-weight: 500;
             transition: all 0.3s;
-            margin-left: 10px;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         .docs-link:hover {
             background: #4b5563;
             color: white;
-        }
-        .jsx-note {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #000;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            text-align: center;
         }
         .back-link {
             display: inline-block;
@@ -112,34 +106,22 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 class="title">⚡ 電圧安定度シミュレーション</h1>
-            <p class="description">電圧崩壊とVARサポートのシミュレーション</p>
-        </div>
-
-        <div class="jsx-note">
-            ⚠️ 注意：JSXファイルはブラウザで直接実行できません
+            <h1 class="title">🔄 UC Jam安定度シミュレーション</h1>
+            <p class="description">IEEE30バス系統での安定度解析</p>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h2 class="card-title">📊 拡張版（統合）</h2>
-                <p class="card-description">HTMLで直接実行可能な統合バージョン</p>
-                <a href="./enhanced.html" class="file-link">🚀 シミュレーション開始</a>
-                <a href="../README.md#voltage-stability" class="docs-link">📖 詳細説明</a>
+                <h2 class="card-title">📊 IEEE30統合シミュレーション</h2>
+                <p class="card-description">IEEE30バス系統での統合安定度解析シミュレーション</p>
+                <a href="./ieee30_integrated.html" class="file-link">🚀 シミュレーション開始</a>
+                <a href="./README.md" class="docs-link">📖 詳細説明</a>
             </div>
 
             <div class="card">
-                <h2 class="card-title">🔧 インデックス版</h2>
-                <p class="card-description">改良されたユーザーインターフェース</p>
-                <a href="./enhanced_index.html" class="file-link">🚀 シミュレーション開始</a>
-                <a href="../README.md#voltage-stability" class="docs-link">📖 詳細説明</a>
-            </div>
-
-            <div class="card">
-                <h2 class="card-title">📁 開発・ソースコード</h2>
-                <p class="card-description">React開発環境用のソースファイルとドキュメント</p>
-                <a href="./enhanced_voltage_stability_simulation.jsx" class="file-link" download>📥 JSXダウンロード</a>
-                <a href="../README.md#development" class="docs-link">📖 開発ガイド</a>
+                <h2 class="card-title">📋 開発ガイド</h2>
+                <p class="card-description">このシミュレーションの開発・カスタマイズガイド</p>
+                <a href="./PROMPT_GUIDE.md" class="docs-link">📝 開発ガイドを読む</a>
             </div>
         </div>
 

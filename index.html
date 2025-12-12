@@ -762,33 +762,60 @@
                             React.createElement(Power, { className: "text-blue-500" })
                         ),
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" },
-                            React.createElement('a', {
-                                href: './cascade_blackout/comprehensive_powerflow_simulation.jsx',
-                                className: "bg-gradient-to-br from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 p-6 rounded-xl transition-all transform hover:scale-105 shadow-xl"
+                            React.createElement('div', {
+                                className: "bg-gradient-to-br from-red-600 to-red-800 p-6 rounded-xl shadow-xl"
                             },
                                 React.createElement('h2', { className: "text-xl font-bold mb-2" }, "🔥 カスケード停電"),
-                                React.createElement('p', { className: "text-sm opacity-90" }, "連鎖的な電力系統崩壊のシミュレーション"),
-                                React.createElement('div', { className: "mt-3 text-xs bg-red-900/50 rounded px-2 py-1" }, "DC/AC潮流計算")
+                                React.createElement('p', { className: "text-sm opacity-90 mb-4" }, "連鎖的な電力系統崩壊のシミュレーション"),
+                                React.createElement('div', { className: "mt-3 text-xs bg-red-900/50 rounded px-2 py-1 mb-3" }, "DC/AC潮流計算"),
+                                React.createElement('div', { className: "flex gap-2" },
+                                    React.createElement('a', {
+                                        href: '#cascade-demo',
+                                        className: "bg-white text-red-800 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-100 transition"
+                                    }, "🚀 実行"),
+                                    React.createElement('a', {
+                                        href: './cascade_blackout/',
+                                        className: "bg-red-900/50 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-900/70 transition"
+                                    }, "📖 詳細")
+                                )
                             ),
-                            React.createElement('a', {
-                                href: './enhanced_voltage/',
-                                className: "bg-gradient-to-br from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 p-6 rounded-xl transition-all transform hover:scale-105 shadow-xl"
+                            React.createElement('div', {
+                                className: "bg-gradient-to-br from-purple-600 to-purple-800 p-6 rounded-xl shadow-xl"
                             },
                                 React.createElement('h2', { className: "text-xl font-bold mb-2" }, "⚡ 電圧安定度"),
-                                React.createElement('p', { className: "text-sm opacity-90" }, "電圧崩壊とVARサポートのシミュレーション"),
-                                React.createElement('div', { className: "mt-3 text-xs bg-purple-900/50 rounded px-2 py-1" }, "電圧・無効電力制御")
+                                React.createElement('p', { className: "text-sm opacity-90 mb-4" }, "電圧崩壊とVARサポートのシミュレーション"),
+                                React.createElement('div', { className: "mt-3 text-xs bg-purple-900/50 rounded px-2 py-1 mb-3" }, "電圧・無効電力制御"),
+                                React.createElement('div', { className: "flex gap-2" },
+                                    React.createElement('a', {
+                                        href: './enhanced_voltage/enhanced.html',
+                                        className: "bg-white text-purple-800 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-100 transition"
+                                    }, "🚀 実行"),
+                                    React.createElement('a', {
+                                        href: './enhanced_voltage/',
+                                        className: "bg-purple-900/50 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-purple-900/70 transition"
+                                    }, "📖 詳細")
+                                )
                             ),
-                            React.createElement('a', {
-                                href: './UC_Jam_stability/',
-                                className: "bg-gradient-to-br from-green-600 to-green-800 hover:from-green-700 hover:to-green-900 p-6 rounded-xl transition-all transform hover:scale-105 shadow-xl"
+                            React.createElement('div', {
+                                className: "bg-gradient-to-br from-green-600 to-green-800 p-6 rounded-xl shadow-xl"
                             },
                                 React.createElement('h2', { className: "text-xl font-bold mb-2" }, "🔄 UC Jam安定度"),
-                                React.createElement('p', { className: "text-sm opacity-90" }, "IEEE30バス系統での安定度解析"),
-                                React.createElement('div', { className: "mt-3 text-xs bg-green-900/50 rounded px-2 py-1" }, "IEEE30バス系統")
+                                React.createElement('p', { className: "text-sm opacity-90 mb-4" }, "IEEE30バス系統での安定度解析"),
+                                React.createElement('div', { className: "mt-3 text-xs bg-green-900/50 rounded px-2 py-1 mb-3" }, "IEEE30バス系統"),
+                                React.createElement('div', { className: "flex gap-2" },
+                                    React.createElement('a', {
+                                        href: './UC_Jam_stability/ieee30_integrated.html',
+                                        className: "bg-white text-green-800 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-100 transition"
+                                    }, "🚀 実行"),
+                                    React.createElement('a', {
+                                        href: './UC_Jam_stability/',
+                                        className: "bg-green-900/50 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-green-900/70 transition"
+                                    }, "📖 詳細")
+                                )
                             )
                         ),
                         React.createElement('hr', { className: "border-gray-600 my-6" }),
-                        React.createElement('h2', { className: "text-xl font-bold mb-3 text-center" }, "統合シミュレーション"),
+                        React.createElement('h2', { id: "cascade-demo", className: "text-xl font-bold mb-3 text-center" }, "🔥 カスケード停電シミュレーション"),
                         React.createElement('p', { className: "text-sm text-gray-400 text-center mb-4" },
                             "DC/AC潮流計算 | 潮流方向表示 | ステップ移動機能 | 無効電力・電圧解析"
                         )

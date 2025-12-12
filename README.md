@@ -10,11 +10,11 @@
 
 ## 📊 シミュレーション一覧
 
-| シミュレーション | 説明 | リンク |
-|---|---|---|
-| 🔥 **カスケード停電** | 連鎖的な電力系統崩壊のシミュレーション | [開始する](https://lutelute.github.io/Blackout_cascase_example/cascade_blackout/) |
-| ⚡ **電圧安定度** | 電圧崩壊とVARサポートのシミュレーション | [開始する](https://lutelute.github.io/Blackout_cascase_example/enhanced_voltage/) |
-| 🔄 **UC Jam安定度** | IEEE30バス系統での安定度解析 | [開始する](https://lutelute.github.io/Blackout_cascase_example/UC_Jam_stability/) |
+| シミュレーション | 説明 | デモ | 詳細 |
+|---|---|---|---|
+| 🔥 **カスケード停電** | 連鎖的な電力系統崩壊のシミュレーション | [🚀 実行](https://lutelute.github.io/Blackout_cascase_example/#cascade-demo) | [📖 詳細](https://lutelute.github.io/Blackout_cascase_example/cascade_blackout/) |
+| ⚡ **電圧安定度** | 電圧崩壊とVARサポートのシミュレーション | [🚀 実行](https://lutelute.github.io/Blackout_cascase_example/enhanced_voltage/enhanced.html) | [📖 詳細](https://lutelute.github.io/Blackout_cascase_example/enhanced_voltage/) |
+| 🔄 **UC Jam安定度** | IEEE30バス系統での安定度解析 | [🚀 実行](https://lutelute.github.io/Blackout_cascase_example/UC_Jam_stability/ieee30_integrated.html) | [📖 詳細](https://lutelute.github.io/Blackout_cascase_example/UC_Jam_stability/) |
 
 ## ⚡ 主な機能
 
