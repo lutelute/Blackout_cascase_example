@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IEEE 30-Bus 統合電力系統解析</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+            color: #e6edf3; min-height: 100vh;
+        }
+        
+        /* ヘッダー */
+        .header {
+            background: linear-gradient(90deg, rgba(0,212,255,0.15), rgba(0,255,136,0.1));
+            border-bottom: 1px solid rgba(0,212,255,0.3);
+            padding: 12px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 {
+            color: #00d4ff;
+            font-size: 1.5em;
+            text-shadow: 0 0 20px rgba(0,212,255,0.5);
+        }
+        .header-stats {
+            display: flex; gap: 20px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 5px 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-value { font-size: 1.2em; font-weight: bold; }
+        .stat-label { font-size: 0.7em; color: #8b949e; }
+        
+        /* タブナビゲーション */
+        .tab-nav {
+            display: flex;
+            background: rgba(0,0,0,0.4);
+            border-bottom: 2px solid rgba(0,212,255,0.2);
+        }
+        .tab-btn {
+            padding: 12px 25px;
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .tab-btn:hover { background: rgba(0,212,255,0.1); color: #e6edf3; }
+        .tab-btn.active {
+            color: #00d4ff;
+            border-bottom-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .tab-icon { font-size: 1.2em; }
+        
+        /* タブコンテンツ */
+        .tab-content { display: none; padding: 15px; }
+        .tab-content.active { display: block; }
+        
+        /* パネル */
+        .panel {
+            background: rgba(22,27,34,0.8);
+            border: 1px solid rgba(48,54,61,0.8);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .panel-title {
+            color: #00d4ff;
+            font-size: 1em;
+            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(48,54,61,0.8);
+        }
+        
+        /* グリッドレイアウト */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; }
+        .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; }
+        
+        /* キャンバス・チャート */
+        .network-canvas { width: 100%; height: 400px; background: rgba(0,0,0,0.3); border-radius: 8px; }
+        .chart-container { height: 200px; }
+        .chart-container-lg { height: 280px; }
+        
+        /* テーブル */
+        table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid rgba(48,54,61,0.6); text-align: center; }
+        th { color: #00d4ff; background: rgba(0,0,0,0.3); font-weight: 600; }
+        .scrollable-table { max-height: 200px; overflow-y: auto; }
+        
+        /* ステータス色 */
+        .status-ok { color: #00ff88; }
+        .status-warn { color: #ffaa00; }
+        .status-crit { color: #ff4444; }
+        .status-info { color: #00d4ff; }
+        
+        /* ボタン */
+        .btn {
+            padding: 8px 16px; border: none; border-radius: 6px;
+            cursor: pointer; font-weight: 600; margin: 3px;
+            transition: all 0.2s; font-size: 0.85em;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .btn-primary { background: linear-gradient(135deg, #00d4ff, #0099cc); color: #000; }
+        .btn-success { background: linear-gradient(135deg, #00ff88, #00cc66); color: #000; }
+        .btn-warning { background: linear-gradient(135deg, #ffaa00, #cc8800); color: #000; }
+        .btn-danger { background: linear-gradient(135deg, #ff4444, #cc2222); color: #fff; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+        }
+        .btn-sm { padding: 5px 10px; font-size: 0.75em; }
+        
+        /* 入力要素 */
+        select, input[type="number"], input[type="text"] {
+            padding: 6px 10px; border-radius: 5px;
+            border: 1px solid rgba(48,54,61,0.8);
+            background: rgba(13,17,23,0.8); color: #e6edf3;
+            font-size: 0.85em;
+        }
+        input[type="range"] { cursor: pointer; }
+        
+        /* コントロール行 */
+        .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+        
+        /* スケジュールグリッド */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(24, 1fr);
+            gap: 1px;
+            font-size: 0.7em;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .schedule-cell {
+            padding: 4px 2px;
+            text-align: center;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .schedule-header { background: rgba(0,212,255,0.2); font-weight: bold; color: #00d4ff; }
+        .schedule-gen { background: rgba(255,255,255,0.05); text-align: left; padding-left: 8px; justify-content: flex-start; }
+        .cell-on { background: rgba(0,170,102,0.7); cursor: pointer; }
+        .cell-off { background: rgba(68,68,68,0.5); cursor: pointer; }
+        .cell-startup { background: rgba(255,136,0,0.7); }
+        .cell-current { box-shadow: inset 0 0 0 2px #fff; }
+        .cell-on:hover, .cell-off:hover { opacity: 0.8; }
+        
+        /* サマリーカード */
+        .summary-cards { display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .card {
+            background: rgba(0,0,0,0.4);
+            padding: 12px 18px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(48,54,61,0.6);
+            min-width: 100px;
+        }
+        .card-value { font-size: 1.4em; font-weight: bold; }
+        .card-label { font-size: 0.7em; color: #8b949e; margin-top: 2px; }
+        
+        /* イベントログ */
+        .event-log {
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.75em;
+            background: rgba(0,0,0,0.4);
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .log-entry { padding: 3px 0; border-bottom: 1px solid rgba(48,54,61,0.3); }
+        
+        /* N-1テーブル */
+        .n1-results { max-height: 300px; overflow-y: auto; }
+        
+        /* 凡例 */
+        .legend { display: flex; gap: 15px; font-size: 0.75em; margin-top: 10px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 3px; }
+        
+        /* レスポンシブ */
+        @media (max-width: 1200px) {
+            .grid-2, .grid-3, .grid-2-1, .grid-1-2 { grid-template-columns: 1fr; }
+        }
+        
+        /* スクロールバー */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.4); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>⚡ IEEE 30-Bus 統合電力系統解析</h1>
+    <div class="header-stats">
+        <div class="stat-item">
+            <div class="stat-value status-ok" id="headerGen">300</div>
+            <div class="stat-label">発電 [MW]</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" style="color:#ff8888" id="headerLoad">283</div>
+            <div class="stat-label">負荷 [MW]</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="headerVmin">1.00</div>
+            <div class="stat-label">最低V [pu]</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="headerCCT">0.25</div>
+            <div class="stat-label">min CCT [s]</div>
+        </div>
+    </div>
+</div>
+
+<div class="tab-nav">
+    <button class="tab-btn active" data-tab="uc">
+        <span class="tab-icon">📅</span> UC計画
+    </button>
+    <button class="tab-btn" data-tab="congestion">
+        <span class="tab-icon">🔥</span> 系統混雑
+    </button>
+    <button class="tab-btn" data-tab="voltage">
+        <span class="tab-icon">📊</span> 電圧安定度
+    </button>
+    <button class="tab-btn" data-tab="transient">
+        <span class="tab-icon">⚠️</span> 事故時安定度
+    </button>
+</div>
+
+<!-- ===== UC計画タブ ===== -->
+<div class="tab-content active" id="tab-uc">
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-value status-info" id="ucCurrentHour">12:00</div>
+            <div class="card-label">現在時刻</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="ucDemand">283</div>
+            <div class="card-label">需要 [MW]</div>
+        </div>
+        <div class="card">
+            <div class="card-value status-ok" id="ucSupply">300</div>
+            <div class="card-label">供給 [MW]</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="ucOnline">4/6</div>
+            <div class="card-label">稼働機</div>
+        </div>
+        <div class="card">
+            <div class="card-value status-warn" id="ucTotalCost">0</div>
+            <div class="card-label">総コスト [$/日]</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="ucReserve">17</div>
+            <div class="card-label">予備率 [%]</div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="controls">
+            <label>時刻:</label>
+            <input type="range" id="ucTimeSlider" min="0" max="23" value="12" style="width:250px;">
+            <span id="ucTimeDisplay" style="width:50px;">12:00</span>
+            <button class="btn btn-primary" onclick="playUC()">▶ 再生</button>
+            <button class="btn btn-warning" onclick="stopUC()">⏹ 停止</button>
+            <span style="margin-left:20px;">最適化:</span>
+            <select id="ucMethod">
+                <option value="priority">優先順位法</option>
+                <option value="dp">動的計画法</option>
+                <option value="milp">区分線形MILP</option>
+            </select>
+            <button class="btn btn-success" onclick="runUCOptimization()">最適化実行</button>
+            <button class="btn btn-outline" onclick="resetUC()">リセット</button>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-title">📈 負荷曲線 & 発電出力</div>
+            <div class="chart-container-lg"><canvas id="ucLoadChart"></canvas></div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">💰 コスト内訳</div>
+            <div class="chart-container-lg"><canvas id="ucCostChart"></canvas></div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="panel-title">📊 発電機スケジュール（クリックでON/OFF切替）</div>
+        <div class="schedule-grid" id="ucScheduleGrid"></div>
+        <div class="controls" style="margin-top:10px;">
+            <label>負荷パターン:</label>
+            <select id="ucLoadPattern">
+                <option value="typical">典型（昼ピーク）</option>
+                <option value="industrial">産業用（フラット）</option>
+                <option value="residential">住宅用（夜ピーク）</option>
+                <option value="duck">ダックカーブ</option>
+            </select>
+            <label>ピーク負荷:</label>
+            <input type="number" id="ucPeakLoad" value="350" min="200" max="500" style="width:70px;"> MW
+            <button class="btn btn-primary btn-sm" onclick="applyLoadPattern()">適用</button>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="panel-title">🔧 発電機データ</div>
+        <div class="scrollable-table">
+            <table id="ucGenTable">
+                <thead>
+                    <tr><th>Gen</th><th>Bus</th><th>Pmin</th><th>Pmax</th><th>a</th><th>b</th><th>c</th><th>起動費</th><th>min UP</th><th>min DN</th><th>状態</th><th>出力</th><th>コスト</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 系統混雑タブ ===== -->
+<div class="tab-content" id="tab-congestion">
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-value status-ok" id="congBusOnline">30</div>
+            <div class="card-label">稼働バス</div>
+        </div>
+        <div class="card">
+            <div class="card-value status-ok" id="congBranchOnline">41</div>
+            <div class="card-label">稼働ブランチ</div>
+        </div>
+        <div class="card">
+            <div class="card-value status-crit" id="congOverloaded">0</div>
+            <div class="card-label">過負荷線</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="congMaxLoading">45%</div>
+            <div class="card-label">最大負荷率</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="congLosses">5.2</div>
+            <div class="card-label">損失 [MW]</div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="controls">
+            <button class="btn btn-primary" onclick="runPowerFlow()">潮流計算</button>
+            <button class="btn btn-warning" onclick="tripBranch()">ブランチ脱落</button>
+            <button class="btn btn-danger" onclick="startCascade()">カスケード開始</button>
+            <button class="btn btn-success" onclick="resetCongestion()">リセット</button>
+            <span style="margin-left:15px;">脱落対象:</span>
+            <select id="congTripSelect"></select>
+            <span style="margin-left:15px;">負荷倍率:</span>
+            <input type="number" id="congLoadMult" value="1.0" step="0.1" min="0.5" max="2.0" style="width:70px;">
+        </div>
+    </div>
+    
+    <div class="grid-2-1">
+        <div class="panel">
+            <div class="panel-title">🗺️ 系統図（潮流方向・負荷率表示）</div>
+            <canvas id="congNetworkCanvas" class="network-canvas"></canvas>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color" style="background:#ff88ff;"></div> Slack</div>
+                <div class="legend-item"><div class="legend-color" style="background:#00ff88;"></div> PV (Gen)</div>
+                <div class="legend-item"><div class="legend-color" style="background:#00d4ff;"></div> PQ (Load)</div>
+                <div class="legend-item"><div class="legend-color" style="background:#ff4444;"></div> >100%</div>
+                <div class="legend-item"><div class="legend-color" style="background:#ffaa00;"></div> >80%</div>
+                <div class="legend-item"><div class="legend-color" style="background:#00d4ff;"></div> >50%</div>
+                <div class="legend-item"><div class="legend-color" style="background:#00aa88;"></div> <50%</div>
+            </div>
+        </div>
+        <div>
+            <div class="panel">
+                <div class="panel-title">📊 ブランチ負荷率分布</div>
+                <div class="chart-container"><canvas id="congLoadingChart"></canvas></div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">📜 イベントログ</div>
+                <div class="event-log" id="congEventLog"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-title">🔌 ブランチ潮流</div>
+            <div class="scrollable-table">
+                <table id="congBranchTable">
+                    <thead><tr><th>From</th><th>To</th><th>P [MW]</th><th>Q [Mvar]</th><th>負荷率</th><th>容量</th><th>状態</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">🔋 バス情報</div>
+            <div class="scrollable-table">
+                <table id="congBusTable">
+                    <thead><tr><th>Bus</th><th>Type</th><th>V [pu]</th><th>δ [°]</th><th>Pgen</th><th>Pload</th><th>状態</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 電圧安定度タブ ===== -->
+<div class="tab-content" id="tab-voltage">
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-value" id="voltVmin">1.00</div>
+            <div class="card-label">最低電圧 [pu]</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="voltVmax">1.06</div>
+            <div class="card-label">最高電圧 [pu]</div>
+        </div>
+        <div class="card">
+            <div class="card-value status-warn" id="voltCritBus">30</div>
+            <div class="card-label">最脆弱バス</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="voltMinDqdv">0.15</div>
+            <div class="card-label">min dQ/dV</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="voltLoadMargin">45%</div>
+            <div class="card-label">負荷余裕</div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="controls">
+            <button class="btn btn-primary" onclick="runVoltageAnalysis()">電圧解析実行</button>
+            <button class="btn btn-warning" onclick="runPVCurve()">PV曲線計算</button>
+            <button class="btn btn-success" onclick="runQVCurve()">QV曲線計算</button>
+            <span style="margin-left:15px;">解析バス:</span>
+            <select id="voltBusSelect"></select>
+            <span style="margin-left:15px;">負荷増加率:</span>
+            <input type="range" id="voltLoadIncrease" min="0" max="100" value="0" style="width:150px;">
+            <span id="voltLoadIncreaseVal">0%</span>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-title">📈 電圧プロファイル</div>
+            <div class="chart-container-lg"><canvas id="voltProfileChart"></canvas></div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">📉 dQ/dV 指標（電圧安定度マージン）</div>
+            <div class="chart-container-lg"><canvas id="voltDqdvChart"></canvas></div>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-title">📊 PV曲線（電圧-有効電力特性）</div>
+            <div class="chart-container-lg"><canvas id="voltPVChart"></canvas></div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">📊 QV曲線（無効電力-電圧特性）</div>
+            <div class="chart-container-lg"><canvas id="voltQVChart"></canvas></div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="panel-title">🔋 バス電圧詳細</div>
+        <div class="scrollable-table">
+            <table id="voltBusTable">
+                <thead><tr><th>Bus</th><th>Type</th><th>V [pu]</th><th>δ [°]</th><th>P [MW]</th><th>Q [Mvar]</th><th>dQ/dV</th><th>感度</th><th>状態</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 事故時安定度タブ ===== -->
+<div class="tab-content" id="tab-transient">
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-value" id="transMinCCT">0.25</div>
+            <div class="card-label">min CCT [s]</div>
+        </div>
+        <div class="card">
+            <div class="card-value status-warn" id="transCritGen">G1</div>
+            <div class="card-label">最脆弱発電機</div>
+        </div>
+        <div class="card">
+            <div class="card-value status-crit" id="transN1Fail">0</div>
+            <div class="card-label">N-1違反</div>
+        </div>
+        <div class="card">
+            <div class="card-value" id="transStableMargin">35°</div>
+            <div class="card-label">安定余裕</div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="controls">
+            <button class="btn btn-primary" onclick="runTransientAnalysis()">過渡解析</button>
+            <button class="btn btn-warning" onclick="runN1Analysis()">N-1解析</button>
+            <button class="btn btn-danger" onclick="simulateFault()">事故シミュレーション</button>
+            <button class="btn btn-success" onclick="resetTransient()">リセット</button>
+            <span style="margin-left:15px;">発電機:</span>
+            <select id="transGenSelect"></select>
+            <span style="margin-left:15px;">事故ブランチ:</span>
+            <select id="transFaultBranch"></select>
+            <span style="margin-left:15px;">事故継続時間:</span>
+            <input type="number" id="transFaultDuration" value="0.1" step="0.01" min="0.01" max="1.0" style="width:70px;"> s
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-title">📈 P-δ曲線（等面積法）</div>
+            <div class="chart-container-lg"><canvas id="transPdeltaChart"></canvas></div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">📊 位相角時間応答</div>
+            <div class="chart-container-lg"><canvas id="transTimeChart"></canvas></div>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div class="panel">
+            <div class="panel-title">⚠️ N-1解析結果</div>
+            <div class="n1-results">
+                <table id="transN1Table">
+                    <thead><tr><th>脱落線</th><th>最大負荷率</th><th>最低電圧</th><th>min CCT</th><th>判定</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">🔧 発電機過渡パラメータ</div>
+            <div class="scrollable-table">
+                <table id="transGenTable">
+                    <thead><tr><th>Gen</th><th>Bus</th><th>Pg [MW]</th><th>H [s]</th><th>X'd [pu]</th><th>δ0 [°]</th><th>δcr [°]</th><th>CCT [s]</th><th>状態</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== IEEE 30-Bus データ定義 =====
+const IEEE30 = {
+    baseMVA: 100,
+    buses: [
+        {id:1,  type:3, Pd:0,    Qd:0,    Vm:1.06,  Va:0},
+        {id:2,  type:2, Pd:21.7, Qd:12.7, Vm:1.043, Va:0},
+        {id:3,  type:1, Pd:2.4,  Qd:1.2,  Vm:1.0,   Va:0},
+        {id:4,  type:1, Pd:7.6,  Qd:1.6,  Vm:1.0,   Va:0},
+        {id:5,  type:2, Pd:94.2, Qd:19.0, Vm:1.01,  Va:0},
+        {id:6,  type:1, Pd:0,    Qd:0,    Vm:1.0,   Va:0},
+        {id:7,  type:1, Pd:22.8, Qd:10.9, Vm:1.0,   Va:0},
+        {id:8,  type:2, Pd:30.0, Qd:30.0, Vm:1.01,  Va:0},
+        {id:9,  type:1, Pd:0,    Qd:0,    Vm:1.0,   Va:0},
+        {id:10, type:1, Pd:5.8,  Qd:2.0,  Vm:1.0,   Va:0},
+        {id:11, type:2, Pd:0,    Qd:0,    Vm:1.082, Va:0},
+        {id:12, type:1, Pd:11.2, Qd:7.5,  Vm:1.0,   Va:0},
+        {id:13, type:2, Pd:0,    Qd:0,    Vm:1.071, Va:0},
+        {id:14, type:1, Pd:6.2,  Qd:1.6,  Vm:1.0,   Va:0},
+        {id:15, type:1, Pd:8.2,  Qd:2.5,  Vm:1.0,   Va:0},
+        {id:16, type:1, Pd:3.5,  Qd:1.8,  Vm:1.0,   Va:0},
+        {id:17, type:1, Pd:9.0,  Qd:5.8,  Vm:1.0,   Va:0},
+        {id:18, type:1, Pd:3.2,  Qd:0.9,  Vm:1.0,   Va:0},
+        {id:19, type:1, Pd:9.5,  Qd:3.4,  Vm:1.0,   Va:0},
+        {id:20, type:1, Pd:2.2,  Qd:0.7,  Vm:1.0,   Va:0},
+        {id:21, type:1, Pd:17.5, Qd:11.2, Vm:1.0,   Va:0},
+        {id:22, type:1, Pd:0,    Qd:0,    Vm:1.0,   Va:0},
+        {id:23, type:1, Pd:3.2,  Qd:1.6,  Vm:1.0,   Va:0},
+        {id:24, type:1, Pd:8.7,  Qd:6.7,  Vm:1.0,   Va:0},
+        {id:25, type:1, Pd:0,    Qd:0,    Vm:1.0,   Va:0},
+        {id:26, type:1, Pd:3.5,  Qd:2.3,  Vm:1.0,   Va:0},
+        {id:27, type:1, Pd:0,    Qd:0,    Vm:1.0,   Va:0},
+        {id:28, type:1, Pd:0,    Qd:0,    Vm:1.0,   Va:0},
+        {id:29, type:1, Pd:2.4,  Qd:0.9,  Vm:1.0,   Va:0},
+        {id:30, type:1, Pd:10.6, Qd:1.9,  Vm:1.0,   Va:0}
+    ],
+    branches: [
+        {from:1,to:2,r:0.0192,x:0.0575,b:0.0528,rateA:130},{from:1,to:3,r:0.0452,x:0.1652,b:0.0408,rateA:130},
+        {from:2,to:4,r:0.0570,x:0.1737,b:0.0368,rateA:65},{from:3,to:4,r:0.0132,x:0.0379,b:0.0084,rateA:130},
+        {from:2,to:5,r:0.0472,x:0.1983,b:0.0418,rateA:130},{from:2,to:6,r:0.0581,x:0.1763,b:0.0374,rateA:65},
+        {from:4,to:6,r:0.0119,x:0.0414,b:0.0090,rateA:90},{from:5,to:7,r:0.0460,x:0.1160,b:0.0204,rateA:70},
+        {from:6,to:7,r:0.0267,x:0.0820,b:0.0170,rateA:130},{from:6,to:8,r:0.0120,x:0.0420,b:0.0090,rateA:32},
+        {from:6,to:9,r:0,x:0.2080,b:0,rateA:65},{from:6,to:10,r:0,x:0.5560,b:0,rateA:32},
+        {from:9,to:11,r:0,x:0.2080,b:0,rateA:65},{from:9,to:10,r:0,x:0.1100,b:0,rateA:65},
+        {from:4,to:12,r:0,x:0.2560,b:0,rateA:65},{from:12,to:13,r:0,x:0.1400,b:0,rateA:65},
+        {from:12,to:14,r:0.1231,x:0.2559,b:0,rateA:32},{from:12,to:15,r:0.0662,x:0.1304,b:0,rateA:32},
+        {from:12,to:16,r:0.0945,x:0.1987,b:0,rateA:32},{from:14,to:15,r:0.2210,x:0.1997,b:0,rateA:16},
+        {from:16,to:17,r:0.0524,x:0.1923,b:0,rateA:16},{from:15,to:18,r:0.1073,x:0.2185,b:0,rateA:16},
+        {from:18,to:19,r:0.0639,x:0.1292,b:0,rateA:16},{from:19,to:20,r:0.0340,x:0.0680,b:0,rateA:32},
+        {from:10,to:20,r:0.0936,x:0.2090,b:0,rateA:32},{from:10,to:17,r:0.0324,x:0.0845,b:0,rateA:32},
+        {from:10,to:21,r:0.0348,x:0.0749,b:0,rateA:32},{from:10,to:22,r:0.0727,x:0.1499,b:0,rateA:32},
+        {from:21,to:22,r:0.0116,x:0.0236,b:0,rateA:32},{from:15,to:23,r:0.1000,x:0.2020,b:0,rateA:16},
+        {from:22,to:24,r:0.1150,x:0.1790,b:0,rateA:16},{from:23,to:24,r:0.1320,x:0.2700,b:0,rateA:16},
+        {from:24,to:25,r:0.1885,x:0.3292,b:0,rateA:16},{from:25,to:26,r:0.2544,x:0.3800,b:0,rateA:16},
+        {from:25,to:27,r:0.1093,x:0.2087,b:0,rateA:16},{from:28,to:27,r:0,x:0.3960,b:0,rateA:65},
+        {from:27,to:29,r:0.2198,x:0.4153,b:0,rateA:16},{from:27,to:30,r:0.3202,x:0.6027,b:0,rateA:16},
+        {from:29,to:30,r:0.2399,x:0.4533,b:0,rateA:16},{from:8,to:28,r:0.0636,x:0.2000,b:0.0428,rateA:32},
+        {from:6,to:28,r:0.0169,x:0.0599,b:0.0130,rateA:32}
+    ],
+    generators: [
+        {bus:1,  Pmin:50,  Pmax:350, Qmin:-20, Qmax:200, a:0,    b:2.00, c:0.00375, startup:1500, minUp:4, minDn:4, H:5.0, Xdp:0.083},
+        {bus:2,  Pmin:20,  Pmax:140, Qmin:-20, Qmax:60,  a:0,    b:1.75, c:0.0175,  startup:600,  minUp:3, minDn:3, H:4.0, Xdp:0.12},
+        {bus:5,  Pmin:15,  Pmax:100, Qmin:-15, Qmax:62.5,a:0,    b:1.00, c:0.0625,  startup:500,  minUp:2, minDn:2, H:3.5, Xdp:0.15},
+        {bus:8,  Pmin:10,  Pmax:100, Qmin:-15, Qmax:48.7,a:0,    b:3.25, c:0.00834, startup:400,  minUp:2, minDn:2, H:3.0, Xdp:0.18},
+        {bus:11, Pmin:10,  Pmax:100, Qmin:-10, Qmax:40,  a:0,    b:3.00, c:0.025,   startup:300,  minUp:1, minDn:1, H:3.0, Xdp:0.20},
+        {bus:13, Pmin:12,  Pmax:100, Qmin:-15, Qmax:44.7,a:0,    b:3.00, c:0.025,   startup:300,  minUp:1, minDn:1, H:3.0, Xdp:0.22}
+    ],
+    busPos: {
+        1:[30,50],2:[90,50],3:[30,110],4:[90,110],5:[150,50],6:[150,110],7:[210,80],8:[210,140],
+        9:[150,170],10:[210,200],11:[150,230],12:[90,170],13:[90,230],14:[50,200],15:[50,250],
+        16:[90,280],17:[150,280],18:[20,290],19:[20,250],20:[180,250],21:[240,250],22:[270,220],
+        23:[30,320],24:[110,320],25:[180,320],26:[220,350],27:[250,290],28:[270,140],29:[310,280],30:[340,320]
+    }
+};
+
+// ===== グローバル状態 =====
+const state = {
+    // 共通
+    buses: [],
+    branches: [],
+    generators: [],
+    loadMult: 1.0,
+    
+    // UC
+    currentHour: 12,
+    schedule: [],
+    loadCurve: [],
+    ucPlaying: false,
+    ucInterval: null,
+    selectedGen: 0,
+    
+    // 系統混雑
+    cascadeActive: false,
+    
+    // 電圧安定度
+    voltageAnalysisBus: 30,
+    loadIncrease: 0,
+    pvCurveData: [],
+    qvCurveData: [],
+    
+    // 過渡安定度
+    faultDuration: 0.1,
+    faultBranch: 0,
+    transientResults: []
+};
+
+// ===== 初期化 =====
+function init() {
+    // データコピー
+    state.buses = JSON.parse(JSON.stringify(IEEE30.buses));
+    state.branches = IEEE30.branches.map(b => ({...b, active: true}));
+    state.generators = IEEE30.generators.map(g => ({...g, Pg: g.Pmax * 0.5, online: true}));
+    
+    // 負荷曲線初期化
+    initLoadCurve();
+    initSchedule();
+    
+    // タブ切替イベント
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+    
+    // スライダーイベント
+    document.getElementById('ucTimeSlider').addEventListener('input', e => {
+        state.currentHour = parseInt(e.target.value);
+        updateUCDisplay();
+    });
+    
+    document.getElementById('voltLoadIncrease').addEventListener('input', e => {
+        state.loadIncrease = parseInt(e.target.value);
+        document.getElementById('voltLoadIncreaseVal').textContent = state.loadIncrease + '%';
+    });
+    
+    document.getElementById('congLoadMult').addEventListener('change', e => {
+        state.loadMult = parseFloat(e.target.value);
+        runPowerFlow();
+    });
+    
+    // セレクト初期化
+    populateSelects();
+    
+    // チャート初期化
+    initAllCharts();
+    
+    // 初期計算
+    runPowerFlow();
+    updateAllDisplays();
+}
+
+// ===== タブ切替 =====
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === 'tab-' + tabId);
+    });
+    
+    // タブ固有の更新
+    if (tabId === 'congestion') {
+        setTimeout(() => drawNetwork(), 100);
+    }
+}
+
+// ===== 負荷曲線 =====
+function initLoadCurve() {
+    const baseLoad = IEEE30.buses.reduce((s, b) => s + b.Pd, 0);
+    const pattern = [0.65,0.60,0.58,0.55,0.55,0.60,0.70,0.85,0.95,1.00,1.00,0.98,
+                     0.95,0.92,0.90,0.92,0.96,1.00,0.98,0.96,0.90,0.82,0.75,0.70];
+    const peak = parseFloat(document.getElementById('ucPeakLoad')?.value || 350);
+    state.loadCurve = pattern.map(p => p * peak);
+}
+
+function applyLoadPattern() {
+    const pattern = document.getElementById('ucLoadPattern').value;
+    const peak = parseFloat(document.getElementById('ucPeakLoad').value);
+    
+    const patterns = {
+        typical: [0.65,0.60,0.58,0.55,0.55,0.60,0.70,0.85,0.95,1.00,1.00,0.98,0.95,0.92,0.90,0.92,0.96,1.00,0.98,0.96,0.90,0.82,0.75,0.70],
+        industrial: [0.85,0.85,0.85,0.85,0.85,0.85,0.90,0.95,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,0.95,0.90,0.85,0.85,0.85,0.85,0.85],
+        residential: [0.50,0.45,0.42,0.40,0.40,0.45,0.55,0.65,0.70,0.70,0.72,0.75,0.78,0.80,0.82,0.85,0.90,0.95,1.00,1.00,0.95,0.85,0.70,0.60],
+        duck: [0.70,0.65,0.60,0.55,0.50,0.45,0.40,0.45,0.55,0.65,0.75,0.80,0.75,0.70,0.65,0.70,0.80,0.95,1.00,0.95,0.85,0.80,0.75,0.72]
+    };
+    
+    state.loadCurve = patterns[pattern].map(p => p * peak);
+    runUCOptimization();
+    updateUCDisplay();
+}
+
+// ===== スケジュール =====
+function initSchedule() {
+    state.schedule = IEEE30.generators.map((gen, i) => {
+        const hourlySchedule = [];
+        for (let h = 0; h < 24; h++) {
+            const demand = state.loadCurve[h];
+            const isOn = i < 3 || demand > 280; // 基幹3機は常時稼働、他は高負荷時
+            hourlySchedule.push({on: isOn, Pg: isOn ? gen.Pmax * 0.5 : 0});
+        }
+        return hourlySchedule;
+    });
+    
+    // 経済負荷配分
+    for (let h = 0; h < 24; h++) {
+        dispatchAtHour(h);
+    }
+}
+
+function dispatchAtHour(hour) {
+    const demand = state.loadCurve[hour];
+    const onlineGens = [];
+    IEEE30.generators.forEach((gen, i) => {
+        if (state.schedule[i][hour].on) {
+            onlineGens.push({idx: i, gen: gen, Pg: gen.Pmin});
+        }
+    });
+    
+    // ランプ方式で配分
+    let remaining = demand;
+    onlineGens.forEach(og => remaining -= og.gen.Pmin);
+    
+    while (remaining > 0 && onlineGens.some(og => og.Pg < og.gen.Pmax)) {
+        // 限界費用が最も低い機を選択
+        let bestIdx = -1, bestCost = Infinity;
+        onlineGens.forEach((og, i) => {
+            if (og.Pg < og.gen.Pmax) {
+                const mc = og.gen.b + 2 * og.gen.c * og.Pg;
+                if (mc < bestCost) { bestCost = mc; bestIdx = i; }
+            }
+        });
+        if (bestIdx < 0) break;
+        
+        const step = Math.min(5, remaining, onlineGens[bestIdx].gen.Pmax - onlineGens[bestIdx].Pg);
+        onlineGens[bestIdx].Pg += step;
+        remaining -= step;
+    }
+    
+    onlineGens.forEach(og => {
+        state.schedule[og.idx][hour].Pg = og.Pg;
+    });
+}
+
+// ===== 潮流計算（DC近似） =====
+function runPowerFlow() {
+    const n = state.buses.length;
+    const slackBus = 0;
+    
+    // Bマトリクス構築
+    const B = Array(n).fill(0).map(() => Array(n).fill(0));
+    state.branches.forEach(br => {
+        if (!br.active) return;
+        const i = br.from - 1, j = br.to - 1;
+        const b = 1 / br.x;
+        B[i][i] += b; B[j][j] += b;
+        B[i][j] -= b; B[j][i] -= b;
+    });
+    
+    // 有効電力注入
+    const P = Array(n).fill(0);
+    state.buses.forEach((bus, i) => {
+        P[i] -= bus.Pd * state.loadMult / IEEE30.baseMVA;
+    });
+    
+    // 発電機出力
+    const h = state.currentHour;
+    IEEE30.generators.forEach((gen, idx) => {
+        const i = gen.bus - 1;
+        if (state.schedule[idx] && state.schedule[idx][h] && state.schedule[idx][h].on) {
+            P[i] += state.schedule[idx][h].Pg / IEEE30.baseMVA;
+        }
+    });
+    
+    // 位相角計算（ガウス・ザイデル簡易版）
+    const theta = Array(n).fill(0);
+    for (let iter = 0; iter < 50; iter++) {
+        for (let i = 0; i < n; i++) {
+            if (i === slackBus) continue;
+            let sum = P[i];
+            for (let j = 0; j < n; j++) {
+                if (j !== i) sum -= B[i][j] * theta[j];
+            }
+            if (Math.abs(B[i][i]) > 1e-6) theta[i] = sum / B[i][i];
+        }
+    }
+    
+    // 電圧計算（簡易AC近似）
+    state.buses.forEach((bus, i) => {
+        bus.Va = theta[i] * 180 / Math.PI;
+        // 電圧降下近似
+        const baseV = bus.type === 3 ? 1.06 : bus.type === 2 ? IEEE30.buses[i].Vm : 1.0;
+        const Qload = bus.Qd * state.loadMult / IEEE30.baseMVA;
+        bus.Vm = Math.max(0.85, Math.min(1.1, baseV - Qload * 0.1));
+    });
+    
+    updateAllDisplays();
+}
+
+// ===== ブランチ潮流計算 =====
+function calcBranchFlows() {
+    return state.branches.map(br => {
+        if (!br.active) return {P: 0, Q: 0, loading: 0, direction: 1};
+        
+        const i = br.from - 1, j = br.to - 1;
+        const theta_i = state.buses[i].Va * Math.PI / 180;
+        const theta_j = state.buses[j].Va * Math.PI / 180;
+        
+        const P = (theta_i - theta_j) / br.x * IEEE30.baseMVA;
+        const Vi = state.buses[i].Vm, Vj = state.buses[j].Vm;
+        const Q = ((Vi*Vi - Vi*Vj*Math.cos(theta_i - theta_j)) / br.x - br.b * Vi*Vi / 2) * IEEE30.baseMVA;
+        
+        const S = Math.sqrt(P*P + Q*Q);
+        const loading = br.rateA > 0 ? (S / br.rateA) * 100 : 0;
+        
+        return {P: Math.abs(P), Q: Q, loading: loading, direction: P >= 0 ? 1 : -1};
+    });
+}
+
+// ===== dQ/dV計算 =====
+function calcDqdv() {
+    return state.buses.map((bus, i) => {
+        if (bus.type === 3) return 999; // Slackは除外
+        
+        // 簡易感度計算
+        let sumB = 0;
+        state.branches.forEach(br => {
+            if (!br.active) return;
+            if (br.from - 1 === i || br.to - 1 === i) {
+                sumB += 1 / br.x;
+            }
+        });
+        
+        const V = bus.Vm;
+        const dqdv = 2 * V * sumB - bus.Qd * state.loadMult / IEEE30.baseMVA / V;
+        return dqdv;
+    });
+}
+
+// ===== CCT計算 =====
+function calcCCT(genIdx) {
+    const gen = IEEE30.generators[genIdx];
+    const h = state.currentHour;
+    const sched = state.schedule[genIdx]?.[h];
+    if (!sched || !sched.on) return {cct: 0, delta0: 0, deltaCr: 0};
+    
+    const Pg = sched.Pg;
+    const E = 1.05, V = 1.0;
+    const X = gen.Xdp + 0.2;
+    const Pmax = E * V / X * IEEE30.baseMVA;
+    
+    const delta0 = Math.asin(Math.min(0.99, Pg / Pmax));
+    const deltaCr = Math.PI - delta0;
+    
+    // 等面積法によるCCT
+    const H = gen.H;
+    const Pm = Pg / IEEE30.baseMVA;
+    const deltaMargin = deltaCr - delta0;
+    
+    if (deltaMargin <= 0) return {cct: 0, delta0: delta0 * 180 / Math.PI, deltaCr: deltaCr * 180 / Math.PI};
+    
+    const cct = Math.sqrt(2 * H * deltaMargin / (2 * Math.PI * 50 * Pm));
+    
+    return {
+        cct: isFinite(cct) ? cct : 0,
+        delta0: delta0 * 180 / Math.PI,
+        deltaCr: deltaCr * 180 / Math.PI,
+        Pmax: Pmax
+    };
+}
+
+// ===== N-1解析 =====
+function runN1Analysis() {
+    const results = [];
+    const originalBranches = JSON.parse(JSON.stringify(state.branches));
+    
+    state.branches.forEach((br, idx) => {
+        if (!br.active) return;
+        
+        // 一時的に脱落
+        state.branches[idx].active = false;
+        
+        // 潮流再計算
+        const flows = calcBranchFlows();
+        const maxLoading = Math.max(...flows.map(f => f.loading));
+        const minV = Math.min(...state.buses.map(b => b.Vm));
+        
+        // CCT計算
+        let minCCT = 999;
+        IEEE30.generators.forEach((_, gi) => {
+            const cctResult = calcCCT(gi);
+            if (cctResult.cct > 0 && cctResult.cct < minCCT) minCCT = cctResult.cct;
+        });
+        
+        const pass = maxLoading < 100 && minV > 0.9 && minCCT > 0.1;
+        
+        results.push({
+            branch: `${br.from}-${br.to}`,
+            maxLoading: maxLoading.toFixed(1),
+            minV: minV.toFixed(3),
+            minCCT: minCCT < 999 ? minCCT.toFixed(3) : '---',
+            pass: pass
+        });
+        
+        // 復旧
+        state.branches[idx].active = true;
+    });
+    
+    state.branches = originalBranches;
+    state.transientResults = results;
+    
+    updateN1Table();
+    logCongEvent('N-1解析完了: ' + results.filter(r => !r.pass).length + '件の違反検出', 
+                  results.some(r => !r.pass) ? 'warn' : 'ok');
+}
+
+// ===== チャート初期化 =====
+let charts = {};
+
+function initAllCharts() {
+    // UCチャート
+    charts.ucLoad = new Chart(document.getElementById('ucLoadChart'), {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            datasets: [
+                {label: '需要', data: state.loadCurve, borderColor: '#ff8800', backgroundColor: 'rgba(255,136,0,0.2)', fill: true, tension: 0.3},
+                {label: '供給', data: [], borderColor: '#00ff88', borderWidth: 2, fill: false, tension: 0.3},
+                {label: '現在', data: [], borderColor: '#fff', backgroundColor: '#fff', pointRadius: 10, showLine: false}
+            ]
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#e6edf3', boxWidth: 12 } } },
+            scales: {
+                x: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { beginAtZero: true, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' }, title: {display: true, text: 'MW', color: '#8b949e'} }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    charts.ucCost = new Chart(document.getElementById('ucCostChart'), {
+        type: 'bar',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => i),
+            datasets: [
+                {label: '燃料費', data: [], backgroundColor: '#00d4ff'},
+                {label: '起動費', data: [], backgroundColor: '#ff8800'}
+            ]
+        },
+        options: {
+            plugins: { legend: { labels: { color: '#e6edf3', boxWidth: 12 } } },
+            scales: {
+                x: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { stacked: true, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' }, title: {display: true, text: '$/h', color: '#8b949e'} }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    // 系統混雑チャート
+    charts.congLoading = new Chart(document.getElementById('congLoadingChart'), {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{label: '負荷率 [%]', data: [], backgroundColor: []}]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { max: 150, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { ticks: { color: '#8b949e', font: {size: 9} }, grid: { color: 'rgba(48,54,61,0.5)' } }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    // 電圧安定度チャート
+    charts.voltProfile = new Chart(document.getElementById('voltProfileChart'), {
+        type: 'bar',
+        data: {
+            labels: state.buses.map(b => b.id),
+            datasets: [{label: '電圧 [pu]', data: [], backgroundColor: []}]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { min: 0.85, max: 1.1, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    charts.voltDqdv = new Chart(document.getElementById('voltDqdvChart'), {
+        type: 'bar',
+        data: {
+            labels: state.buses.map(b => b.id),
+            datasets: [{label: 'dQ/dV', data: [], backgroundColor: []}]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    charts.voltPV = new Chart(document.getElementById('voltPVChart'), {
+        type: 'line',
+        data: { datasets: [] },
+        options: {
+            plugins: { legend: { labels: { color: '#e6edf3' } } },
+            scales: {
+                x: { type: 'linear', title: {display: true, text: '負荷率 [%]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { min: 0.7, max: 1.1, title: {display: true, text: 'V [pu]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    charts.voltQV = new Chart(document.getElementById('voltQVChart'), {
+        type: 'line',
+        data: { datasets: [] },
+        options: {
+            plugins: { legend: { labels: { color: '#e6edf3' } } },
+            scales: {
+                x: { type: 'linear', title: {display: true, text: 'V [pu]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { title: {display: true, text: 'Q [Mvar]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    // 過渡安定度チャート
+    charts.transPdelta = new Chart(document.getElementById('transPdeltaChart'), {
+        type: 'line',
+        data: { datasets: [] },
+        options: {
+            plugins: { legend: { labels: { color: '#e6edf3' } } },
+            scales: {
+                x: { type: 'linear', min: 0, max: 180, title: {display: true, text: 'δ [°]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { min: 0, title: {display: true, text: 'P [pu]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } }
+            },
+            maintainAspectRatio: false
+        }
+    });
+    
+    charts.transTime = new Chart(document.getElementById('transTimeChart'), {
+        type: 'line',
+        data: { datasets: [] },
+        options: {
+            plugins: { legend: { labels: { color: '#e6edf3' } } },
+            scales: {
+                x: { type: 'linear', min: 0, max: 2, title: {display: true, text: 't [s]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } },
+                y: { title: {display: true, text: 'δ [°]', color: '#8b949e'}, ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } }
+            },
+            maintainAspectRatio: false
+        }
+    });
+}
+
+// ===== 表示更新 =====
+function updateAllDisplays() {
+    updateHeaderStats();
+    updateUCDisplay();
+    updateCongestionDisplay();
+    updateVoltageDisplay();
+    updateTransientDisplay();
+}
+
+function updateHeaderStats() {
+    const h = state.currentHour;
+    let totalGen = 0;
+    IEEE30.generators.forEach((_, i) => {
+        if (state.schedule[i]?.[h]?.on) totalGen += state.schedule[i][h].Pg;
+    });
+    const totalLoad = state.loadCurve[h];
+    const minV = Math.min(...state.buses.map(b => b.Vm));
+    
+    let minCCT = 999;
+    IEEE30.generators.forEach((_, i) => {
+        const cct = calcCCT(i);
+        if (cct.cct > 0 && cct.cct < minCCT) minCCT = cct.cct;
+    });
+    
+    document.getElementById('headerGen').textContent = totalGen.toFixed(0);
+    document.getElementById('headerLoad').textContent = totalLoad.toFixed(0);
+    document.getElementById('headerVmin').textContent = minV.toFixed(2);
+    document.getElementById('headerCCT').textContent = minCCT < 999 ? minCCT.toFixed(2) : '---';
+    
+    // 色更新
+    document.getElementById('headerVmin').className = 'stat-value ' + (minV < 0.9 ? 'status-crit' : minV < 0.95 ? 'status-warn' : 'status-ok');
+}
+
+function updateUCDisplay() {
+    const h = state.currentHour;
+    document.getElementById('ucTimeDisplay').textContent = `${h}:00`;
+    document.getElementById('ucCurrentHour').textContent = `${h}:00`;
+    
+    const demand = state.loadCurve[h];
+    let supply = 0, onlineCount = 0;
+    IEEE30.generators.forEach((_, i) => {
+        if (state.schedule[i]?.[h]?.on) {
+            supply += state.schedule[i][h].Pg;
+            onlineCount++;
+        }
+    });
+    
+    document.getElementById('ucDemand').textContent = demand.toFixed(0);
+    document.getElementById('ucSupply').textContent = supply.toFixed(0);
+    document.getElementById('ucSupply').className = 'card-value ' + (supply >= demand ? 'status-ok' : 'status-crit');
+    document.getElementById('ucOnline').textContent = `${onlineCount}/${IEEE30.generators.length}`;
+    document.getElementById('ucReserve').textContent = ((supply - demand) / demand * 100).toFixed(0);
+    
+    // 総コスト計算
+    let totalCost = 0;
+    for (let t = 0; t < 24; t++) {
+        IEEE30.generators.forEach((gen, i) => {
+            if (state.schedule[i]?.[t]?.on) {
+                const Pg = state.schedule[i][t].Pg;
+                totalCost += gen.a + gen.b * Pg + gen.c * Pg * Pg;
+                if (t > 0 && state.schedule[i][t-1] && !state.schedule[i][t-1].on) {
+                    totalCost += gen.startup;
+                }
+            }
+        });
+    }
+    document.getElementById('ucTotalCost').textContent = totalCost.toFixed(0);
+    
+    // スケジュールグリッド更新
+    updateScheduleGrid();
+    
+    // チャート更新
+    updateUCCharts();
+    
+    // テーブル更新
+    updateUCGenTable();
+}
+
+function updateScheduleGrid() {
+    const grid = document.getElementById('ucScheduleGrid');
+    const h = state.currentHour;
+    
+    let html = '<div class="schedule-cell schedule-header"></div>';
+    for (let t = 0; t < 24; t++) {
+        html += `<div class="schedule-cell schedule-header ${t === h ? 'cell-current' : ''}">${t}</div>`;
+    }
+    
+    IEEE30.generators.forEach((gen, i) => {
+        html += `<div class="schedule-cell schedule-gen">G${gen.bus}</div>`;
+        for (let t = 0; t < 24; t++) {
+            const sched = state.schedule[i]?.[t];
+            const isOn = sched?.on || false;
+            const wasOff = t > 0 && state.schedule[i]?.[t-1] && !state.schedule[i][t-1].on;
+            const cellClass = isOn ? (wasOff ? 'cell-startup' : 'cell-on') : 'cell-off';
+            const currentClass = t === h ? ' cell-current' : '';
+            const pgText = isOn ? Math.round(sched.Pg) : '';
+            html += `<div class="schedule-cell ${cellClass}${currentClass}" onclick="toggleSchedule(${i},${t})">${pgText}</div>`;
+        }
+    });
+    
+    grid.innerHTML = html;
+}
+
+function toggleSchedule(genIdx, hour) {
+    if (!state.schedule[genIdx]) return;
+    const sched = state.schedule[genIdx][hour];
+    sched.on = !sched.on;
+    sched.Pg = sched.on ? IEEE30.generators[genIdx].Pmax * 0.5 : 0;
+    dispatchAtHour(hour);
+    updateUCDisplay();
+}
+
+function updateUCCharts() {
+    const h = state.currentHour;
+    
+    // 負荷チャート
+    charts.ucLoad.data.datasets[0].data = state.loadCurve;
+    const supplyData = [];
+    for (let t = 0; t < 24; t++) {
+        let s = 0;
+        IEEE30.generators.forEach((_, i) => {
+            if (state.schedule[i]?.[t]?.on) s += state.schedule[i][t].Pg;
+        });
+        supplyData.push(s);
+    }
+    charts.ucLoad.data.datasets[1].data = supplyData;
+    charts.ucLoad.data.datasets[2].data = Array(24).fill(null);
+    charts.ucLoad.data.datasets[2].data[h] = state.loadCurve[h];
+    charts.ucLoad.update();
+    
+    // コストチャート
+    const fuelData = [], startupData = [];
+    for (let t = 0; t < 24; t++) {
+        let fuel = 0, startup = 0;
+        IEEE30.generators.forEach((gen, i) => {
+            if (state.schedule[i]?.[t]?.on) {
+                const Pg = state.schedule[i][t].Pg;
+                fuel += gen.a + gen.b * Pg + gen.c * Pg * Pg;
+                if (t > 0 && state.schedule[i][t-1] && !state.schedule[i][t-1].on) startup += gen.startup;
+            }
+        });
+        fuelData.push(fuel);
+        startupData.push(startup);
+    }
+    charts.ucCost.data.datasets[0].data = fuelData;
+    charts.ucCost.data.datasets[1].data = startupData;
+    charts.ucCost.update();
+}
+
+function updateUCGenTable() {
+    const h = state.currentHour;
+    const tbody = document.querySelector('#ucGenTable tbody');
+    
+    tbody.innerHTML = IEEE30.generators.map((gen, i) => {
+        const sched = state.schedule[i]?.[h];
+        const isOn = sched?.on || false;
+        const Pg = isOn ? sched.Pg : 0;
+        const cost = isOn ? (gen.a + gen.b * Pg + gen.c * Pg * Pg) : 0;
+        
+        return `<tr>
+            <td>G${gen.bus}</td>
+            <td>${gen.bus}</td>
+            <td>${gen.Pmin}</td>
+            <td>${gen.Pmax}</td>
+            <td>${gen.a}</td>
+            <td>${gen.b.toFixed(2)}</td>
+            <td>${gen.c.toFixed(4)}</td>
+            <td>${gen.startup}</td>
+            <td>${gen.minUp}</td>
+            <td>${gen.minDn}</td>
+            <td class="${isOn ? 'status-ok' : 'status-crit'}">${isOn ? 'ON' : 'OFF'}</td>
+            <td>${Pg.toFixed(1)}</td>
+            <td>${cost.toFixed(0)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function updateCongestionDisplay() {
+    const flows = calcBranchFlows();
+    const activeCount = state.branches.filter(b => b.active).length;
+    const overloaded = flows.filter(f => f.loading > 100).length;
+    const maxLoading = Math.max(...flows.map(f => f.loading));
+    
+    document.getElementById('congBranchOnline').textContent = activeCount;
+    document.getElementById('congOverloaded').textContent = overloaded;
+    document.getElementById('congOverloaded').className = 'card-value ' + (overloaded > 0 ? 'status-crit' : 'status-ok');
+    document.getElementById('congMaxLoading').textContent = maxLoading.toFixed(0) + '%';
+    document.getElementById('congMaxLoading').className = 'card-value ' + (maxLoading > 100 ? 'status-crit' : maxLoading > 80 ? 'status-warn' : '');
+    
+    // 損失計算
+    let losses = 0;
+    flows.forEach((f, i) => {
+        if (state.branches[i].active) {
+            losses += f.P * f.P * state.branches[i].r / 100;
+        }
+    });
+    document.getElementById('congLosses').textContent = losses.toFixed(1);
+    
+    // 負荷率チャート
+    const sortedFlows = flows.map((f, i) => ({...f, label: `${state.branches[i].from}-${state.branches[i].to}`}))
+                              .filter(f => f.loading > 0)
+                              .sort((a, b) => b.loading - a.loading)
+                              .slice(0, 15);
+    
+    charts.congLoading.data.labels = sortedFlows.map(f => f.label);
+    charts.congLoading.data.datasets[0].data = sortedFlows.map(f => f.loading);
+    charts.congLoading.data.datasets[0].backgroundColor = sortedFlows.map(f => 
+        f.loading > 100 ? '#ff4444' : f.loading > 80 ? '#ffaa00' : '#00d4ff'
+    );
+    charts.congLoading.update();
+    
+    // ブランチテーブル
+    const branchTbody = document.querySelector('#congBranchTable tbody');
+    branchTbody.innerHTML = state.branches.map((br, i) => {
+        const f = flows[i];
+        const statusClass = !br.active ? '' : f.loading > 100 ? 'status-crit' : f.loading > 80 ? 'status-warn' : 'status-ok';
+        return `<tr>
+            <td>${br.from}</td>
+            <td>${br.to}</td>
+            <td>${f.P.toFixed(1)}</td>
+            <td>${f.Q.toFixed(1)}</td>
+            <td class="${statusClass}">${f.loading.toFixed(1)}%</td>
+            <td>${br.rateA}</td>
+            <td class="${br.active ? 'status-ok' : 'status-crit'}">${br.active ? '稼働' : '脱落'}</td>
+        </tr>`;
+    }).join('');
+    
+    // バステーブル
+    const busTbody = document.querySelector('#congBusTable tbody');
+    busTbody.innerHTML = state.buses.map(bus => {
+        const gen = IEEE30.generators.find(g => g.bus === bus.id);
+        const h = state.currentHour;
+        const genIdx = gen ? IEEE30.generators.indexOf(gen) : -1;
+        const Pgen = genIdx >= 0 && state.schedule[genIdx]?.[h]?.on ? state.schedule[genIdx][h].Pg : 0;
+        const statusClass = bus.Vm < 0.9 ? 'status-crit' : bus.Vm < 0.95 ? 'status-warn' : 'status-ok';
+        
+        return `<tr>
+            <td>${bus.id}</td>
+            <td>${bus.type === 3 ? 'Slack' : bus.type === 2 ? 'PV' : 'PQ'}</td>
+            <td class="${statusClass}">${bus.Vm.toFixed(3)}</td>
+            <td>${bus.Va.toFixed(2)}</td>
+            <td>${Pgen.toFixed(1)}</td>
+            <td>${(bus.Pd * state.loadMult).toFixed(1)}</td>
+            <td class="${statusClass}">${bus.Vm < 0.9 ? '低電圧' : '正常'}</td>
+        </tr>`;
+    }).join('');
+    
+    drawNetwork();
+}
+
+function updateVoltageDisplay() {
+    const minV = Math.min(...state.buses.map(b => b.Vm));
+    const maxV = Math.max(...state.buses.map(b => b.Vm));
+    const dqdvValues = calcDqdv();
+    const minDqdv = Math.min(...dqdvValues.filter(v => v < 100));
+    const critBus = dqdvValues.indexOf(minDqdv) + 1;
+    
+    document.getElementById('voltVmin').textContent = minV.toFixed(3);
+    document.getElementById('voltVmin').className = 'card-value ' + (minV < 0.9 ? 'status-crit' : minV < 0.95 ? 'status-warn' : 'status-ok');
+    document.getElementById('voltVmax').textContent = maxV.toFixed(3);
+    document.getElementById('voltCritBus').textContent = critBus;
+    document.getElementById('voltMinDqdv').textContent = minDqdv.toFixed(3);
+    document.getElementById('voltMinDqdv').className = 'card-value ' + (minDqdv < 0.1 ? 'status-crit' : minDqdv < 0.2 ? 'status-warn' : '');
+    
+    // 電圧プロファイル
+    charts.voltProfile.data.datasets[0].data = state.buses.map(b => b.Vm);
+    charts.voltProfile.data.datasets[0].backgroundColor = state.buses.map(b => 
+        b.Vm < 0.9 ? '#ff4444' : b.Vm < 0.95 ? '#ffaa00' : '#00ff88'
+    );
+    charts.voltProfile.update();
+    
+    // dQ/dV
+    charts.voltDqdv.data.datasets[0].data = dqdvValues.map(v => v > 10 ? null : v);
+    charts.voltDqdv.data.datasets[0].backgroundColor = dqdvValues.map(v => 
+        v < 0.1 ? '#ff4444' : v < 0.2 ? '#ffaa00' : '#00d4ff'
+    );
+    charts.voltDqdv.update();
+    
+    // テーブル
+    const voltTbody = document.querySelector('#voltBusTable tbody');
+    voltTbody.innerHTML = state.buses.map((bus, i) => {
+        const dqdv = dqdvValues[i];
+        const sensitivity = dqdv < 100 ? (1 / dqdv).toFixed(3) : '---';
+        const statusClass = bus.Vm < 0.9 ? 'status-crit' : bus.Vm < 0.95 ? 'status-warn' : 'status-ok';
+        
+        return `<tr>
+            <td>${bus.id}</td>
+            <td>${bus.type === 3 ? 'Slack' : bus.type === 2 ? 'PV' : 'PQ'}</td>
+            <td class="${statusClass}">${bus.Vm.toFixed(3)}</td>
+            <td>${bus.Va.toFixed(2)}</td>
+            <td>${(bus.Pd * state.loadMult).toFixed(1)}</td>
+            <td>${(bus.Qd * state.loadMult).toFixed(1)}</td>
+            <td>${dqdv < 100 ? dqdv.toFixed(3) : '---'}</td>
+            <td>${sensitivity}</td>
+            <td class="${statusClass}">${dqdv < 0.1 ? '危険' : dqdv < 0.2 ? '注意' : '正常'}</td>
+        </tr>`;
+    }).join('');
+}
+
+function updateTransientDisplay() {
+    let minCCT = 999, critGen = '';
+    const h = state.currentHour;
+    
+    IEEE30.generators.forEach((gen, i) => {
+        const cct = calcCCT(i);
+        if (cct.cct > 0 && cct.cct < minCCT) {
+            minCCT = cct.cct;
+            critGen = `G${gen.bus}`;
+        }
+    });
+    
+    document.getElementById('transMinCCT').textContent = minCCT < 999 ? minCCT.toFixed(3) : '---';
+    document.getElementById('transMinCCT').className = 'card-value ' + (minCCT < 0.1 ? 'status-crit' : minCCT < 0.2 ? 'status-warn' : '');
+    document.getElementById('transCritGen').textContent = critGen || '---';
+    
+    const n1Fail = state.transientResults.filter(r => !r.pass).length;
+    document.getElementById('transN1Fail').textContent = n1Fail;
+    document.getElementById('transN1Fail').className = 'card-value ' + (n1Fail > 0 ? 'status-crit' : 'status-ok');
+    
+    // P-δ曲線更新
+    updatePdeltaChart();
+    
+    // 発電機テーブル
+    const transTbody = document.querySelector('#transGenTable tbody');
+    transTbody.innerHTML = IEEE30.generators.map((gen, i) => {
+        const cct = calcCCT(i);
+        const sched = state.schedule[i]?.[h];
+        const isOn = sched?.on || false;
+        const Pg = isOn ? sched.Pg : 0;
+        const statusClass = cct.cct < 0.1 ? 'status-crit' : cct.cct < 0.2 ? 'status-warn' : 'status-ok';
+        
+        return `<tr>
+            <td>G${gen.bus}</td>
+            <td>${gen.bus}</td>
+            <td>${Pg.toFixed(1)}</td>
+            <td>${gen.H}</td>
+            <td>${gen.Xdp}</td>
+            <td>${cct.delta0.toFixed(1)}</td>
+            <td>${cct.deltaCr.toFixed(1)}</td>
+            <td class="${statusClass}">${cct.cct > 0 ? cct.cct.toFixed(3) : '---'}</td>
+            <td class="${isOn ? 'status-ok' : ''}">${isOn ? '稼働' : 'OFF'}</td>
+        </tr>`;
+    }).join('');
+}
+
+function updatePdeltaChart() {
+    const genIdx = parseInt(document.getElementById('transGenSelect')?.value || 0);
+    const gen = IEEE30.generators[genIdx];
+    const cct = calcCCT(genIdx);
+    const h = state.currentHour;
+    const sched = state.schedule[genIdx]?.[h];
+    
+    if (!sched?.on || !cct.Pmax) {
+        charts.transPdelta.data.datasets = [];
+        charts.transPdelta.update();
+        return;
+    }
+    
+    const Pmax = cct.Pmax;
+    const Pm = sched.Pg;
+    
+    // P-δ曲線
+    const pdCurve = [];
+    for (let d = 0; d <= 180; d += 2) {
+        pdCurve.push({x: d, y: Pmax * Math.sin(d * Math.PI / 180) / IEEE30.baseMVA});
+    }
+    
+    const opPoint = [{x: cct.delta0, y: Pm / IEEE30.baseMVA}];
+    const pmLine = [{x: 0, y: Pm / IEEE30.baseMVA}, {x: 180, y: Pm / IEEE30.baseMVA}];
+    const crLine = [{x: cct.deltaCr, y: 0}, {x: cct.deltaCr, y: Pmax / IEEE30.baseMVA * 1.1}];
+    
+    charts.transPdelta.data.datasets = [
+        {label: 'P-δ', data: pdCurve, borderColor: '#00d4ff', borderWidth: 2, fill: false, pointRadius: 0, tension: 0.3},
+        {label: '運転点', data: opPoint, borderColor: '#00ff88', backgroundColor: '#00ff88', pointRadius: 12, showLine: false},
+        {label: 'Pm', data: pmLine, borderColor: '#ffff00', borderWidth: 2, borderDash: [5,5], pointRadius: 0},
+        {label: 'δcr', data: crLine, borderColor: '#ff4444', borderWidth: 2, borderDash: [3,3], pointRadius: 0}
+    ];
+    charts.transPdelta.options.scales.y.max = Pmax / IEEE30.baseMVA * 1.2;
+    charts.transPdelta.update();
+    
+    // 安定余裕
+    document.getElementById('transStableMargin').textContent = (cct.deltaCr - cct.delta0).toFixed(1) + '°';
+}
+
+function updateN1Table() {
+    const tbody = document.querySelector('#transN1Table tbody');
+    tbody.innerHTML = state.transientResults.map(r => `
+        <tr>
+            <td>${r.branch}</td>
+            <td class="${parseFloat(r.maxLoading) > 100 ? 'status-crit' : ''}">${r.maxLoading}%</td>
+            <td class="${parseFloat(r.minV) < 0.9 ? 'status-crit' : ''}">${r.minV}</td>
+            <td>${r.minCCT}</td>
+            <td class="${r.pass ? 'status-ok' : 'status-crit'}">${r.pass ? 'OK' : 'NG'}</td>
+        </tr>
+    `).join('');
+}
+
+// ===== ネットワーク描画 =====
+function drawNetwork() {
+    const canvas = document.getElementById('congNetworkCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = rect.height * 2;
+    ctx.scale(2, 2);
+    const w = rect.width, h = rect.height;
+    
+    ctx.fillStyle = 'rgba(13,17,23,0.9)';
+    ctx.fillRect(0, 0, w, h);
+    
+    const scale = Math.min(w / 380, h / 380);
+    const ox = 15, oy = 15;
+    
+    const flows = calcBranchFlows();
+    
+    // ブランチ描画
+    state.branches.forEach((br, idx) => {
+        const p1 = IEEE30.busPos[br.from], p2 = IEEE30.busPos[br.to];
+        if (!p1 || !p2) return;
+        
+        const x1 = ox + p1[0] * scale, y1 = oy + p1[1] * scale;
+        const x2 = ox + p2[0] * scale, y2 = oy + p2[1] * scale;
+        
+        const f = flows[idx];
+        
+        if (!br.active) {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            return;
+        }
+        
+        const loading = f.loading;
+        let color = loading > 100 ? '#ff4444' : loading > 80 ? '#ffaa00' : loading > 50 ? '#00d4ff' : '#00aa88';
+        const lw = Math.max(1, Math.min(5, loading / 25));
+        
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lw;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        
+        // 潮流方向矢印
+        if (Math.abs(f.P) > 1) {
+            const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowAngle = f.direction > 0 ? angle : angle + Math.PI;
+            
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(mx + 7 * Math.cos(arrowAngle), my + 7 * Math.sin(arrowAngle));
+            ctx.lineTo(mx + 4 * Math.cos(arrowAngle + 2.5), my + 4 * Math.sin(arrowAngle + 2.5));
+            ctx.lineTo(mx + 4 * Math.cos(arrowAngle - 2.5), my + 4 * Math.sin(arrowAngle - 2.5));
+            ctx.closePath();
+            ctx.fill();
+        }
+    });
+    
+    // バス描画
+    const hh = state.currentHour;
+    state.buses.forEach((bus, i) => {
+        const pos = IEEE30.busPos[bus.id];
+        if (!pos) return;
+        const x = ox + pos[0] * scale, y = oy + pos[1] * scale;
+        const r = bus.type === 3 ? 12 : bus.type === 2 ? 10 : 7;
+        
+        let busColor = bus.Vm < 0.9 ? '#ff4444' : bus.Vm < 0.95 ? '#ffaa00' : 
+                       bus.type === 3 ? '#ff88ff' : bus.type === 2 ? '#00ff88' : '#00d4ff';
+        
+        ctx.fillStyle = busColor;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(bus.id, x, y + 3);
+        
+        // 発電出力
+        const genIdx = IEEE30.generators.findIndex(g => g.bus === bus.id);
+        if (genIdx >= 0 && state.schedule[genIdx]?.[hh]?.on) {
+            ctx.fillStyle = '#ffff00';
+            ctx.font = '7px sans-serif';
+            ctx.fillText(`${state.schedule[genIdx][hh].Pg.toFixed(0)}`, x, y - r - 2);
+        }
+        
+        // 負荷
+        if (bus.Pd > 0) {
+            ctx.fillStyle = '#ff8888';
+            ctx.font = '7px sans-serif';
+            ctx.fillText(`${(bus.Pd * state.loadMult).toFixed(0)}`, x, y + r + 9);
+        }
+    });
+}
+
+// ===== セレクト初期化 =====
+function populateSelects() {
+    // 脱落ブランチ
+    const tripSel = document.getElementById('congTripSelect');
+    tripSel.innerHTML = state.branches.map((br, i) => 
+        `<option value="${i}">${br.from}-${br.to}</option>`
+    ).join('');
+    
+    // 電圧解析バス
+    const voltBusSel = document.getElementById('voltBusSelect');
+    voltBusSel.innerHTML = state.buses.map(b => `<option value="${b.id}">${b.id}</option>`).join('');
+    voltBusSel.value = '30';
+    
+    // 発電機選択
+    const transGenSel = document.getElementById('transGenSelect');
+    transGenSel.innerHTML = IEEE30.generators.map((g, i) => 
+        `<option value="${i}">G${g.bus}</option>`
+    ).join('');
+    transGenSel.addEventListener('change', () => updatePdeltaChart());
+    
+    // 事故ブランチ
+    const faultBranchSel = document.getElementById('transFaultBranch');
+    faultBranchSel.innerHTML = state.branches.map((br, i) => 
+        `<option value="${i}">${br.from}-${br.to}</option>`
+    ).join('');
+}
+
+// ===== イベントログ =====
+function logCongEvent(msg, type = 'info') {
+    const log = document.getElementById('congEventLog');
+    const color = type === 'crit' ? '#ff4444' : type === 'warn' ? '#ffaa00' : type === 'ok' ? '#00ff88' : '#00d4ff';
+    const time = new Date().toLocaleTimeString();
+    log.innerHTML = `<div class="log-entry" style="color:${color}">[${time}] ${msg}</div>` + log.innerHTML;
+}
+
+// ===== UC操作 =====
+function playUC() {
+    if (state.ucPlaying) return;
+    state.ucPlaying = true;
+    state.ucInterval = setInterval(() => {
+        state.currentHour = (state.currentHour + 1) % 24;
+        document.getElementById('ucTimeSlider').value = state.currentHour;
+        updateUCDisplay();
+        runPowerFlow();
+    }, 1000);
+}
+
+function stopUC() {
+    state.ucPlaying = false;
+    if (state.ucInterval) {
+        clearInterval(state.ucInterval);
+        state.ucInterval = null;
+    }
+}
+
+function runUCOptimization() {
+    const method = document.getElementById('ucMethod').value;
+    
+    // 簡易優先順位法
+    for (let h = 0; h < 24; h++) {
+        const demand = state.loadCurve[h];
+        let capacity = 0;
+        
+        // コスト順にソート
+        const sortedGens = IEEE30.generators.map((g, i) => ({
+            idx: i, gen: g,
+            avgCost: (g.a + g.b * g.Pmax * 0.5 + g.c * Math.pow(g.Pmax * 0.5, 2)) / (g.Pmax * 0.5)
+        })).sort((a, b) => a.avgCost - b.avgCost);
+        
+        sortedGens.forEach(sg => {
+            const needMore = capacity < demand * 1.1; // 10%予備
+            state.schedule[sg.idx][h].on = needMore || sg.idx < 2; // 基幹2機は常時ON
+            if (state.schedule[sg.idx][h].on) capacity += sg.gen.Pmax;
+        });
+        
+        dispatchAtHour(h);
+    }
+    
+    updateUCDisplay();
+    logCongEvent(`UC最適化完了 (${method})`, 'ok');
+}
+
+function resetUC() {
+    stopUC();
+    state.currentHour = 12;
+    document.getElementById('ucTimeSlider').value = 12;
+    initSchedule();
+    updateUCDisplay();
+    runPowerFlow();
+}
+
+// ===== 系統混雑操作 =====
+function tripBranch() {
+    const idx = parseInt(document.getElementById('congTripSelect').value);
+    if (state.branches[idx].active) {
+        state.branches[idx].active = false;
+        logCongEvent(`ブランチ ${state.branches[idx].from}-${state.branches[idx].to} 脱落`, 'warn');
+        runPowerFlow();
+    }
+}
+
+function startCascade() {
+    if (state.cascadeActive) return;
+    state.cascadeActive = true;
+    logCongEvent('カスケード停電シミュレーション開始', 'crit');
+    
+    const cascadeStep = () => {
+        const flows = calcBranchFlows();
+        let tripped = false;
+        
+        state.branches.forEach((br, i) => {
+            if (br.active && flows[i].loading > 100) {
+                br.active = false;
+                logCongEvent(`過負荷により ${br.from}-${br.to} 脱落 (${flows[i].loading.toFixed(0)}%)`, 'crit');
+                tripped = true;
+            }
+        });
+        
+        if (tripped) {
+            runPowerFlow();
+            setTimeout(cascadeStep, 1000);
+        } else {
+            state.cascadeActive = false;
+            logCongEvent('カスケード停止', 'ok');
+        }
+    };
+    
+    cascadeStep();
+}
+
+function resetCongestion() {
+    state.cascadeActive = false;
+    state.branches = IEEE30.branches.map(b => ({...b, active: true}));
+    state.loadMult = 1.0;
+    document.getElementById('congLoadMult').value = 1.0;
+    logCongEvent('系統リセット', 'ok');
+    runPowerFlow();
+}
+
+// ===== 電圧安定度操作 =====
+function runVoltageAnalysis() {
+    runPowerFlow();
+    updateVoltageDisplay();
+}
+
+function runPVCurve() {
+    const busIdx = parseInt(document.getElementById('voltBusSelect').value) - 1;
+    const pvData = [];
+    const originalLoadMult = state.loadMult;
+    
+    for (let mult = 0.5; mult <= 2.0; mult += 0.05) {
+        state.loadMult = mult;
+        runPowerFlow();
+        pvData.push({x: mult * 100, y: state.buses[busIdx].Vm});
+        
+        if (state.buses[busIdx].Vm < 0.7) break;
+    }
+    
+    state.loadMult = originalLoadMult;
+    runPowerFlow();
+    
+    charts.voltPV.data.datasets = [{
+        label: `Bus ${busIdx + 1}`,
+        data: pvData,
+        borderColor: '#00d4ff',
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3,
+        pointRadius: 2
+    }];
+    charts.voltPV.update();
+    
+    // 負荷余裕計算
+    const collapsePoint = pvData.find(p => p.y < 0.9);
+    const margin = collapsePoint ? ((collapsePoint.x / 100 - 1) * 100).toFixed(0) : '>100';
+    document.getElementById('voltLoadMargin').textContent = margin + '%';
+}
+
+function runQVCurve() {
+    const busIdx = parseInt(document.getElementById('voltBusSelect').value) - 1;
+    const qvData = [];
+    
+    for (let v = 0.7; v <= 1.1; v += 0.02) {
+        // 簡易Q計算
+        const bus = state.buses[busIdx];
+        let sumB = 0;
+        state.branches.forEach(br => {
+            if (!br.active) return;
+            if (br.from - 1 === busIdx || br.to - 1 === busIdx) {
+                sumB += 1 / br.x;
+            }
+        });
+        const Q = (v * v * sumB - bus.Qd * state.loadMult / IEEE30.baseMVA) * IEEE30.baseMVA;
+        qvData.push({x: v, y: Q});
+    }
+    
+    charts.voltQV.data.datasets = [{
+        label: `Bus ${busIdx + 1}`,
+        data: qvData,
+        borderColor: '#00ff88',
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3,
+        pointRadius: 2
+    }];
+    charts.voltQV.update();
+}
+
+// ===== 過渡安定度操作 =====
+function runTransientAnalysis() {
+    updateTransientDisplay();
+}
+
+function simulateFault() {
+    const genIdx = parseInt(document.getElementById('transGenSelect').value);
+    const faultDuration = parseFloat(document.getElementById('transFaultDuration').value);
+    const gen = IEEE30.generators[genIdx];
+    const cct = calcCCT(genIdx);
+    
+    if (!cct.cct) {
+        logCongEvent('発電機がOFFです', 'warn');
+        return;
+    }
+    
+    // 時間応答シミュレーション
+    const H = gen.H;
+    const Pm = state.schedule[genIdx]?.[state.currentHour]?.Pg / IEEE30.baseMVA || 0;
+    const Pmax = cct.Pmax / IEEE30.baseMVA;
+    
+    const dt = 0.01;
+    const timeData = [];
+    let delta = cct.delta0 * Math.PI / 180;
+    let omega = 0;
+    
+    for (let t = 0; t <= 2; t += dt) {
+        const Pe = t < faultDuration ? 0 : Pmax * Math.sin(delta);
+        const Pa = Pm - Pe;
+        const domega = Pa / (2 * H) * dt * 2 * Math.PI * 50;
+        omega += domega;
+        delta += omega * dt;
+        
+        timeData.push({x: t, y: delta * 180 / Math.PI});
+        
+        if (delta > Math.PI) {
+            logCongEvent(`t=${t.toFixed(2)}sで不安定 (δ>${(delta*180/Math.PI).toFixed(0)}°)`, 'crit');
+            break;
+        }
+    }
+    
+    charts.transTime.data.datasets = [{
+        label: `G${gen.bus}`,
+        data: timeData,
+        borderColor: delta < Math.PI ? '#00ff88' : '#ff4444',
+        borderWidth: 2,
+        fill: false,
+        pointRadius: 0
+    }];
+    charts.transTime.update();
+    
+    const stable = delta < Math.PI;
+    logCongEvent(`事故シミュレーション: ${stable ? '安定' : '不安定'} (tc=${faultDuration}s, CCT=${cct.cct.toFixed(3)}s)`, stable ? 'ok' : 'crit');
+}
+
+function resetTransient() {
+    state.transientResults = [];
+    charts.transTime.data.datasets = [];
+    charts.transTime.update();
+    updateTransientDisplay();
+}
+
+// ===== 初期化実行 =====
+window.addEventListener('load', init);
+window.addEventListener('resize', () => {
+    if (document.getElementById('tab-congestion').classList.contains('active')) {
+        drawNetwork();
+    }
+});
+</script>
+</body>
+</html>

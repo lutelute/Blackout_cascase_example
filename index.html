@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カスケード停電シミュレーション</title>
+    <title>電力系統シミュレーション集</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -756,11 +756,40 @@
             return React.createElement('div', { className: "w-full min-h-screen bg-gray-900 text-white p-4" },
                 React.createElement('div', { className: "max-w-[1800px] mx-auto" },
                     React.createElement('div', { className: "mb-4" },
-                        React.createElement('h1', { className: "text-2xl font-bold mb-2 flex items-center gap-2" },
+                        React.createElement('h1', { className: "text-3xl font-bold mb-4 text-center flex items-center justify-center gap-3" },
                             React.createElement(Flame, { className: "text-red-500" }),
-                            "総合潮流解析シミュレーション"
+                            "電力系統シミュレーション集",
+                            React.createElement(Power, { className: "text-blue-500" })
                         ),
-                        React.createElement('p', { className: "text-sm text-red-400 font-semibold" },
+                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" },
+                            React.createElement('a', {
+                                href: './cascade_blackout/comprehensive_powerflow_simulation.jsx',
+                                className: "bg-gradient-to-br from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 p-6 rounded-xl transition-all transform hover:scale-105 shadow-xl"
+                            },
+                                React.createElement('h2', { className: "text-xl font-bold mb-2" }, "🔥 カスケード停電"),
+                                React.createElement('p', { className: "text-sm opacity-90" }, "連鎖的な電力系統崩壊のシミュレーション"),
+                                React.createElement('div', { className: "mt-3 text-xs bg-red-900/50 rounded px-2 py-1" }, "DC/AC潮流計算")
+                            ),
+                            React.createElement('a', {
+                                href: './enhanced_voltage/',
+                                className: "bg-gradient-to-br from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 p-6 rounded-xl transition-all transform hover:scale-105 shadow-xl"
+                            },
+                                React.createElement('h2', { className: "text-xl font-bold mb-2" }, "⚡ 電圧安定度"),
+                                React.createElement('p', { className: "text-sm opacity-90" }, "電圧崩壊とVARサポートのシミュレーション"),
+                                React.createElement('div', { className: "mt-3 text-xs bg-purple-900/50 rounded px-2 py-1" }, "電圧・無効電力制御")
+                            ),
+                            React.createElement('a', {
+                                href: './UC_Jam_stability/',
+                                className: "bg-gradient-to-br from-green-600 to-green-800 hover:from-green-700 hover:to-green-900 p-6 rounded-xl transition-all transform hover:scale-105 shadow-xl"
+                            },
+                                React.createElement('h2', { className: "text-xl font-bold mb-2" }, "🔄 UC Jam安定度"),
+                                React.createElement('p', { className: "text-sm opacity-90" }, "IEEE30バス系統での安定度解析"),
+                                React.createElement('div', { className: "mt-3 text-xs bg-green-900/50 rounded px-2 py-1" }, "IEEE30バス系統")
+                            )
+                        ),
+                        React.createElement('hr', { className: "border-gray-600 my-6" }),
+                        React.createElement('h2', { className: "text-xl font-bold mb-3 text-center" }, "統合シミュレーション"),
+                        React.createElement('p', { className: "text-sm text-gray-400 text-center mb-4" },
                             "DC/AC潮流計算 | 潮流方向表示 | ステップ移動機能 | 無効電力・電圧解析"
                         )
                     ),
